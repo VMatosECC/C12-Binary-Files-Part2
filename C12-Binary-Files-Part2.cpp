@@ -52,8 +52,10 @@ void makeBinaryFile(string& csvFilePath, string& binFilePath);
 void showBinaryFile(fstream& file, string caption = "");
 int  countRecords(string filename);
 void sequentialSearch(fstream& binFile, int key);
+void binarySearch(fstream& binFile, int key);
+fstream openBinaryFile(string filename, ios::openmode mode = ios::in | ios::out);
 
-// Main Program -----------------------------------------------
+// Main Program ------------------------------------------------------------
 void experiment01();    //Create a binary file from a csv text file
 void experiment02();    //Tell how many records are there in the binary file.
 void experiment03();    //Random access. Read backwards every other record
@@ -61,6 +63,9 @@ void experiment04();    //Add a record to the binary file.
 void experiment05();    //Modify an existing record
 void experiment06();    //Sequential search by ID
 void experiment07();    //Binary search by ID
+void experiment08();    //Delete a record from the binary file
+void experiment09();    //Create an index to search by ID. Show the index
+
 
 
 //add a record to the binary file, show the new record, and show all records
@@ -68,19 +73,35 @@ void experiment07();    //Binary search by ID
 
 int main()
 {
-    experiment01();     //Read csv text file, create an equivalent binary file
-    experiment02();     //Tell how many records are there in the binary file.
-    experiment03();     //Show random access of the binary file.
-    experiment04();     //Add a record to the binary file.
-    experiment05();     //Modify an existing record
-    experiment06();     //Search by ID using Linear Search
-    experiment07();     //Search by ID using Binary Search
-
+    //experiment01();     //Read csv text file, create an equivalent binary file
+    //experiment02();     //Tell how many records are there in the binary file.
+    //experiment03();     //Show random access of the binary file.
+    //experiment04();     //Add a record to the binary file.
+    //experiment05();     //Modify an existing record
+    //experiment06();     //Search by ID using Linear Search
+    //experiment07();     //Search by ID using Binary Search
+    //experiment08();     //Delete a record from the binary file
+    experiment09();     //Create an index to search by ID. Show the index
     cout << "\nAll done!\n";
 }
 
-// User-Defined Functions =====================================================
+// User-Defined Functions =========================================================
 
+fstream openBinaryFile(string filename, ios::openmode mode)
+{
+    //Open the binary file for READ and WRITE. Default mode is ios::in | ios::out
+    //Observe that if the file does not exist, ios::in will fail
+    fstream file(filename, mode | ios::binary);
+    if (!file) {
+        cout << "Error opening binary file " << filename << endl;
+        exit(1);
+    }
+    return file; //return the file object
+}
+
+
+
+//-------------------------------------------------------------------------------
 void showBinaryFile(fstream& file, string caption)
 {
     //Read records from binFile-display their content 
@@ -107,7 +128,7 @@ void showBinaryFile(fstream& file, string caption)
 //---------------------------------------------------------------------------
 void binarySearch(fstream& binFile, int key) {
     //Precondition: binFile is open and sorted on ID field
-    //Reste eof flag, set get-pointer to the beginning of the file
+    //Reset eof flag, set get-pointer to the beginning of the file
     binFile.clear();
     binFile.seekg(0, ios::end);
 
@@ -170,15 +191,18 @@ void sequentialSearch(fstream& binFile, int key) {
 }
 
 //---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
+
 int countRecords(string filename)
 {
-    //Open the binary file for reading
-    fstream binFile(filename, ios::in | ios::binary);
-    if (!binFile) {
-        cout << "Error opening binary file " << filename << endl;
-        exit(1);
-    }
+    ////Open the binary file for reading
+    //fstream binFile(filename, ios::in | ios::binary);
+    //if (!binFile) {
+    //    cout << "Error opening binary file " << filename << endl;
+    //    exit(1);
+    //}
+
+    //Open the binary file for reading & writing (call utility function)
+    fstream binFile = openBinaryFile(filename);
 
     //Count the number of records in the binary file
     binFile.seekg(0, ios::end);
@@ -192,7 +216,7 @@ void makeBinaryFile(string& csvFilePath, string& binFilePath) {
     // Open the input CSV file
     ifstream csvFile(csvFilePath);
     if (!csvFile) {
-        cerr << "Error opening CSV file." << endl;
+        cerr << "Error opening CSV file. " << endl;
         exit(1);
     }
 
@@ -391,7 +415,117 @@ void experiment07()
 
     binFile.close();
 }
-
-
 //---------------------------------------------------------------------------
+void     experiment08()
+{
+    //Delete a record from the binary file
+    //1. Open the binary file for reading and writing
+    //2. Open a temporary file for writing
+    //3. Copy all records except the one to be deleted
+    //4. Close both files
+    //5. Delete the original file
+    //6. Rename the temporary file to the original file name
 
+    string binFileName = "c:/temp/springfieldPeople.bin";
+    string tempFileName = "c:/temp/tempFile.bin";
+
+    fstream binFile = openBinaryFile(binFileName, ios::in);     //Open for reading
+    fstream tempFile = openBinaryFile(tempFileName, ios::out);  //Open for writing
+
+    //Delete Bart Simpson's record (ID = 110)
+    int    key = 110;
+    Person p;
+    bool   found = false;
+    while (binFile.read((char*)&p, sizeof(Person)))
+    {
+        if (p.id == key)
+        {
+            cout << "Record deleted: " << endl;
+            p.print();
+            found = true;
+        }
+        else
+        {
+            tempFile.write((char*)&p, sizeof(Person));
+        }
+    }
+    if (!found)
+    {
+        cout << "Record not found." << endl;
+    }
+    //Close both files
+    binFile.close();
+    tempFile.close();
+
+    //Delete the original file
+    remove(binFileName.c_str());
+
+    //Rename the temporary file to the original file name
+    rename(tempFileName.c_str(), binFileName.c_str());
+
+    //Show all records in the binary file
+    binFile = openBinaryFile(binFileName);
+    showBinaryFile(binFile, "Binary file after deleting Bart Simpson's record");
+
+}
+//---------------------------------------------------------------------------
+void experiment09()
+{
+    //Create an index to search by ID. Show the index
+    //Open the binary file for reading
+    string binFileName = "c:/temp/springfieldPeople.bin";
+    fstream binFile = openBinaryFile(binFileName, ios::in);
+
+    //Create an index to search by ID (Done only once!)
+    vector<int> index;
+    Person p;
+    int    pos = 0;
+    //Read all records and populate the index
+    while (binFile.read((char*)&p, sizeof(Person)))
+    {
+        cout << pos << "\t";    //for debugging
+        p.print();              //for debugging
+        index.push_back(p.id);
+        pos++;
+    }
+    binFile.clear();            //clear the eof flag
+    binFile.seekg(0, ios::beg); //move the get-pointer to the top of the file
+
+    //Show the index
+    cout << "\nIndex to search by ID: " << endl;
+    cout << "Index\tID" << endl;
+    for (int i = 0; i < index.size(); i++)
+    {
+        cout << i << "\t" << index[i] << endl;
+    }
+
+    do {
+        //Ask user for a key, search the index (not the file!), and show the record
+        int key;
+        cout << "\n[SEARCH USING INDEX[ID] ] Enter an ID key to show the record [0 to end]: ";
+        cin >> key;
+        if (key == 0) break;
+        //Using sequential search for now
+        bool found = false;
+        for (int i = 0; i < index.size(); i++)
+        {
+            if (index[i] == key)
+            {
+                found = true;
+                cout << "Record found at position " << i << endl;
+                binFile.seekg(i * sizeof(Person), ios::beg);    //move get-pointer to the record
+                binFile.read((char*)&p, sizeof(Person));        //read the record
+                p.print();                                      //display the record    
+                break;
+            }
+        }
+        if (!found)
+        {
+            cout << "Record not found." << endl;
+        }
+    } while (true);
+
+
+    binFile.close();
+}
+//---------------------------------------------------------------------------
