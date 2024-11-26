@@ -1,4 +1,27 @@
 // C12-Binary-Files-Part2.cpp 
+/*  This is the springfieldPeople.txt dataset -----------------------------
+100,Homer Simpson,39,data100
+105,Marge Simpson,36,data105
+110,Bart Simpson,10,data110
+115,Lisa Simpson,8,data115
+120,Maggie Simpson,1,data120
+125,Abraham Simpson,83,data125
+130,Ned Flanders,60,data130
+135,Maude Flanders,58,data135
+140,Milhouse Van Houten,10,data140
+145,Nelson Muntz,12,data145
+150,Ralph Wiggum,8,data150
+155,Seymour Skinner,44,data155
+160,Edna Krabappel,41,data160
+165,Apu Nahasapeemapetilon,45,data165
+170,Moe Szyslak,50,data170
+175,Barney Gumble,40,data175
+180,Krusty the Clown,55,data180
+185,Clancy Wiggum,45,data185
+190,Waylon Smithers,40,data190
+195,Montgomery Burns,104,data195
+
+*/
 #include <iostream>
 #include <iomanip>
 #include <fstream>
@@ -6,95 +29,96 @@
 #include <vector>
 using namespace std;
 
-// Structures ------------------------------------------------
+// Structures --------------------------------------------------
 struct Person
 {
     int    id;
-    char   name[30];
+    char   name[30];    //using c-string instead of string
     int    age;
-    char   data[10];
+    char   data[10];    //arbitrary data field
 
     void print()
     {
         cout << "[ ID: " << id
-            << ", Name: " << name
             << ", Age: " << age
-            << ", Data: " << data << "]" << endl;
+            << ", Data: " << data 
+            << ", Name: " << name
+            << "]" << endl;
     }
 };
 
 // Function Prototypes ---------------------------------------
-void makeMemoryDatabase(vector<Person>& people);
-void writeBinaryFile(vector<Person>& people, string filename);
-void readBinaryFile(vector<Person>& people, string filename);
-void showDatabase(vector<Person>& people);
+void makeBinaryFile(string& csvFilePath, string& binFilePath);
+void showBinaryFile(fstream& file, string caption = "");
+int  countRecords(string filename);
 void sequentialSearch(fstream& binFile, int key);
 
 // Main Program -----------------------------------------------
-void experiment01();
-void experiment02();
-void experiment03();
+void experiment01();    //Create a binary file from a csv text file
+void experiment02();    //Tell how many records are there in the binary file.
+void experiment03();    //Random access. Read backwards every other record
+void experiment04();    //Add a record to the binary file.
+void experiment05();    //Modify an existing record
+void experiment06();    //Sequential search by ID
+void experiment07();    //Binary search by ID
+
+
+//add a record to the binary file, show the new record, and show all records
 
 
 int main()
 {
-    experiment01();     //Read text file, make memory resident database, write binary file
-    experiment02();     //Num records in binary file, read backwards every other record, seach by ID
-                        //also apply Binary search by ID
-    experiment03();     //add a record to the binary file, show the new record, and show all records
+    experiment01();     //Read csv text file, create an equivalent binary file
+    experiment02();     //Tell how many records are there in the binary file.
+    experiment03();     //Show random access of the binary file.
+    experiment04();     //Add a record to the binary file.
+    experiment05();     //Modify an existing record
+    experiment06();     //Search by ID using Linear Search
+    experiment07();     //Search by ID using Binary Search
 
     cout << "\nAll done!\n";
 }
 
-// Function Definitions ---------------------------------------
-void experiment03()
+// User-Defined Functions =====================================================
+
+void showBinaryFile(fstream& file, string caption)
 {
-    //Open the binary file for reading and writing
-    string filename = "c:/temp/springfieldPeople.bin";
-    fstream binFile(filename, ios::in | ios::out | ios::binary);
-    if (!binFile) {
-        cout << "Error opening binary file " << filename << endl;
-        exit(1);
-    }
-    //How many records are in the binary file?
-    int numRecords = 0;
-    binFile.clear();
-    binFile.seekg(0, ios::end);
-    numRecords = binFile.tellg() / sizeof(Person);
-    cout << "[experiment03] Number of records in the binary file: " << numRecords << endl;
-    //Add a new record to the binary file
-    Person p;
-    p.id = 200;
-    strcpy_s(p.name, "Jimbo Jones");
-    p.age = 33;
-    strcpy_s(p.data, "data200");
-    binFile.seekp(0, ios::end);
-    binFile.write((char*)&p, sizeof(Person));
-    cout << "New record added to the binary file: " << endl;
-    p.print();
-    //Show all records in the binary file
-    cout << "\nShowing all records in the binary file: " << endl;
-    binFile.clear();
-    binFile.seekg(0, ios::beg);
-    while (binFile.read((char*)&p, sizeof(Person)))
+    //Read records from binFile-display their content 
+    cout << "\n" << caption << endl;    //show caption
+    Person p;                           //create a Person object
+    int pos = 0;                        //position counter 0,1,2, ...
+    file.clear();                       //clear the eof flag
+    file.seekg(0, ios::beg);            //move get-pointer to the top 
+
+    while (file.read((char*)&p, sizeof(Person)))  //read a record   
     {
+        cout << pos++ << "\t";  //display position and record content   
         p.print();
     }
-    binFile.close();
+    cout << endl;
+    file.clear();               //courtesy - clear the eof flag
+    file.seekg(0, ios::beg);    //courtesy - move the get-pointer to top of the file
+
 }
 
 
 
+
+//---------------------------------------------------------------------------
 void binarySearch(fstream& binFile, int key) {
-    //We assume the file exists and is open
-    Person p;
+    //Precondition: binFile is open and sorted on ID field
+    //Reste eof flag, set get-pointer to the beginning of the file
     binFile.clear();
     binFile.seekg(0, ios::end);
+
+    //Determine the number of records in the binary file
     int numRecords = binFile.tellg() / sizeof(Person);
+
     int low = 0;
     int high = numRecords - 1;
     int mid;
     bool found = false;
+    Person p;
     while (low <= high)
     {
         mid = (low + high) / 2;
@@ -122,6 +146,7 @@ void binarySearch(fstream& binFile, int key) {
     }
 }
 
+//---------------------------------------------------------------------------
 void sequentialSearch(fstream& binFile, int key) {
     //We assume the file exists and is open
     Person p;
@@ -144,22 +169,95 @@ void sequentialSearch(fstream& binFile, int key) {
     }
 }
 
-
-
-void experiment02()
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+int countRecords(string filename)
 {
-    //We assume that the binary file exists
-    string filename = "c:/temp/springfieldPeople.bin";
-    fstream binFile(filename, ios::in | ios::out | ios::binary);
+    //Open the binary file for reading
+    fstream binFile(filename, ios::in | ios::binary);
     if (!binFile) {
-        cout << "Error opening ninary file " << filename << endl;
+        cout << "Error opening binary file " << filename << endl;
         exit(1);
     }
-    //How many records are in the binary file?
-    int numRecords = 0;
+
+    //Count the number of records in the binary file
     binFile.seekg(0, ios::end);
-    numRecords = binFile.tellg() / sizeof(Person);
-    cout << "Number of records in the binary file: " << numRecords << endl;
+    int numRecords = binFile.tellg() / sizeof(Person);
+    binFile.close();
+    return numRecords;
+}
+
+//---------------------------------------------------------------------------
+void makeBinaryFile(string& csvFilePath, string& binFilePath) {
+    // Open the input CSV file
+    ifstream csvFile(csvFilePath);
+    if (!csvFile) {
+        cerr << "Error opening CSV file." << endl;
+        exit(1);
+    }
+
+    // Declare the output binary file
+    static fstream binFile(binFilePath, ios::out | ios::binary);
+
+    // Read the CSV file and create Person objects
+    Person p;
+    string strId, strName, strAge, strData;
+
+    while (getline(csvFile, strId, ',')) {
+        getline(csvFile, strName, ',');
+        getline(csvFile, strAge, ',');
+        getline(csvFile, strData);
+
+        p.id = stoi(strId);                 // Convert string to int
+        p.age = stoi(strAge);               // Convert string to int
+        strcpy_s(p.name, strName.c_str());  // Copy string to c-string
+        strcpy_s(p.data, strData.c_str());  // Copy string to c-string
+
+        binFile.write(reinterpret_cast<char*>(&p), sizeof(Person));  // Populate binFile
+    }
+
+    csvFile.close();
+    binFile.close();                        // Commit changes made to the binary file                         
+}
+
+//---------------------------------------------------------------------------
+void experiment01()
+{
+    //Create a binary file from a csv text file
+    string csvFilePath = "c:/temp/springfieldPeople.txt";
+    string binFilePath = "c:/temp/springfieldPeople.bin";
+    makeBinaryFile(csvFilePath, binFilePath);
+    cout << "Binary file created from the CSV file." << endl;
+}
+
+//---------------------------------------------------------------------------
+void experiment02()
+{
+    //Determine the number of records in the binary file
+    string filename = "c:/temp/springfieldPeople.bin";
+    int numRecords = countRecords(filename);
+    cout << filename << " has " << numRecords << " records " << endl;
+
+}
+
+//---------------------------------------------------------------------------
+void experiment03()
+{
+    //Demonstrate the random access nature of binFile
+    //Show backwards navigation, display every other record
+
+    string binFileName = "c:/temp/springfieldPeople.bin";
+    
+    //How many records are in the binary file?
+    int numRecords = countRecords(binFileName);     
+    
+    //Open the binary file for reading and writing
+    fstream binFile(binFileName, ios::in | ios::out | ios::binary);
+    if (!binFile) {
+        cout << "Error opening binary file " << binFileName << endl;
+        exit(1);
+    }
+
     //Print every other record
     Person p;
     cout << "\nShowing every other record in the binary file (backwards): " << endl;
@@ -170,6 +268,96 @@ void experiment02()
         cout << i << "\t";
         p.print();
     }
+    binFile.close();
+}
+
+//---------------------------------------------------------------------------
+void experiment04()
+{
+    //Add a record to the binary file
+    string filename = "c:/temp/springfieldPeople.bin";
+    fstream binFile(filename, ios::in | ios::out | ios::binary);
+    if (!binFile) {
+        cout << "Error opening binary file " << filename << endl;
+        exit(1);
+    }
+
+    //Add a new record to the binary file
+    Person p;
+    //Assemble the new record
+    p.id = 200;
+    p.age = 33;
+    strcpy_s(p.name, "Jimbo Jones");
+    strcpy_s(p.data, "data200");
+
+    //Write the new record to the binary file
+    //move the put-pointer to the end of the file
+    binFile.seekp(0, ios::end);         
+    binFile.write((char*)&p, sizeof(Person));
+    
+    cout << "\nNew record added to the binary file: " << endl;
+    p.print();
+
+    //Show all records in the binary file
+    showBinaryFile(binFile, "Binary file after adding a new record (Jimbo)");
+}
+
+//---------------------------------------------------------------------------
+void experiment05()
+{
+    //Modify an existing record - change Bart's data field to "newData"
+    //Barts record is at position 2
+    
+    //Open the binary file for reading and writing
+    string binFileName = "c:/temp/springfieldPeople.bin";
+    fstream binFile(binFileName, ios::in | ios::out | ios::binary);
+    if (!binFile) {
+        cout << "Error opening binary file " << binFileName << endl;
+        exit(1);
+    }
+
+    //Fetch and modify record at position 2 (Bart's record)
+    Person p;
+    int pos = 2;
+    binFile.clear();    //clear the eof flag
+
+    // set the get-pointer to position 2, the read the record
+    binFile.seekg(pos * sizeof(Person), ios::beg);    
+    binFile.read((char*)&p, sizeof(Person));
+
+    //Show the 'OLD' record
+    cout << "\n[step1] Modifying record at position " << pos << endl;
+    p.print();
+
+    //change the record's data field to "newData"
+    strcpy_s(p.data, "NEWDATA");
+
+    //Show the modified record
+    cout << "\n[step2] Modified record at position " << pos << " modified: " << endl;
+    p.print();
+
+    //set the put-pointer to position 2 ('Bart's record)
+    //write the modified record back to the file
+    binFile.seekp(pos * sizeof(Person), ios::beg);        
+    binFile.write((char*)&p, sizeof(Person));
+
+    //Show all records in the binary file
+    cout << "\n[step3] Binary file after changing rec. #2 (Bart's data): " << endl;
+    showBinaryFile(binFile, "New database:");
+    binFile.close();
+}
+//---------------------------------------------------------------------------
+void experiment06()
+{
+    //Search by ID using Linear Search
+    //Open the binary file for reading and writing
+    string binFileName = "c:/temp/springfieldPeople.bin";
+    fstream binFile(binFileName, ios::in | ios::out | ios::binary);
+    if (!binFile) {
+        cout << "Error opening binary file " << binFileName << endl;
+        exit(1);
+    }
+
     //Ask user for a key, apply sequential search, and show the record
     int key;
     do {
@@ -178,95 +366,32 @@ void experiment02()
         if (key == 0) break;
         sequentialSearch(binFile, key);
     } while (true);
+}
+//---------------------------------------------------------------------------
+void experiment07()
+{
+    //Search by ID using Binary Search
 
-    //Ask user for a key, apply binary search, and show the record
+    //Open the binary file for reading and writing
+    string binFileName = "c:/temp/springfieldPeople.bin";
+    fstream binFile(binFileName, ios::in | ios::out | ios::binary);
+    if (!binFile) {
+        cout << "Error opening binary file " << binFileName << endl;
+        exit(1);
+    }
+
+    //Ask user for a key, apply sequential search, and show the record
+    int key;
     do {
         cout << "\n[BINARY SEARCH] Enter an ID key to show the record [0 to end]: ";
         cin >> key;
         if (key == 0) break;
         binarySearch(binFile, key);
     } while (true);
-}
-void experiment01()
-{
-    //Create a binary file from a vector of Person objects
-    string filename = "c:/temp/springfieldPeople.bin";
-    vector<Person> people;
-    makeMemoryDatabase(people);
-    showDatabase(people);
-    writeBinaryFile(people, filename);
+
+    binFile.close();
 }
 
 
+//---------------------------------------------------------------------------
 
-void makeMemoryDatabase(vector<Person>& people)
-{
-    //Read csv file and create a vector of Person objects
-    
-    ifstream fin("c:/temp/springfieldPeople.txt");
-    if (!fin)
-    {
-        cout << "Error opening file." << endl;
-        exit(1);
-    }   
-
-    Person p;
-    string strId, strName, strAge, strData;
-    while (getline(fin, strId, ',')){
-        getline(fin, strName, ',');
-        getline(fin, strAge, ',');
-        getline(fin, strData);
-        p.id = stoi(strId);
-        strcpy_s(p.name, strName.c_str());
-        p.age = stoi(strAge);   
-        strcpy_s(p.data, strData.c_str());
-        people.push_back(p);
-    }
-    fin.close();
-}
-
-void showDatabase(vector<Person>& people)
-{
-    cout << "People Database (Memory Resident) - Size: " << people.size() << endl;
-    for (int i = 0; i < people.size(); i++)
-    {
-        cout << i << "\t";
-        people[i].print();
-    }
-}
-
-void writeBinaryFile(vector<Person>& people, string filename)
-{
-    //Use the memory database to create a persisten binary file image
-    fstream fout(filename, ios::out | ios::binary);
-    if (!fout)
-    {
-        cout << "Error opening binary file." << endl;
-        exit(1);
-    }
-
-    for (int i = 0; i < people.size(); i++)
-    {
-        fout.write((char*)&people[i], sizeof(Person));
-    }
-    fout.close();
-    cout << "Binary file created => " << filename << endl;
-}
-
-void readBinaryFile(vector<Person>& people, string filename)
-{
-    //Read the binary file and create a memory database
-    fstream fin(filename, ios::in | ios::binary);
-    if (!fin)
-    {
-        cout << "Error opening binary file." << endl;
-        exit(1);
-    }
-
-    Person p;
-    while (fin.read((char*)&p, sizeof(Person)))
-    {
-        people.push_back(p);
-    }
-    fin.close();
-}
