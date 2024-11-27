@@ -68,9 +68,6 @@ void experiment09();    //Create an index to search by ID. Show the index
 
 
 
-//add a record to the binary file, show the new record, and show all records
-
-
 int main()
 {
     //experiment01();     //Read csv text file, create an equivalent binary file
