@@ -272,6 +272,7 @@ void makeBinaryFile(string& csvFilePath, string& binFilePath) {
 //---------------------------------------------------------------------------
 void experiment01()
 {
+    cout << "\nExperiment01. Create a binary file from a csv text file" << endl;
     //Create a binary file from a csv text file
     string csvFilePath = "c:/temp/springfieldPeople.txt";
     string binFilePath = "c:/temp/springfieldPeople.bin";
@@ -282,6 +283,7 @@ void experiment01()
 //---------------------------------------------------------------------------
 void experiment02()
 {
+    cout << "\nExperiment02. Tell how many records are there in the binary file." << endl;
     //Determine the number of records in the binary file
     string filename = "c:/temp/springfieldPeople.bin";
     int numRecords = countRecords(filename);
@@ -292,6 +294,7 @@ void experiment02()
 //---------------------------------------------------------------------------
 void experiment03()
 {
+    cout << "\nExperiment03. Random access. Read backwards every other record" << endl;
     //Demonstrate the random access nature of binFile
     //Show backwards navigation, display every other record
 
@@ -323,6 +326,7 @@ void experiment03()
 //---------------------------------------------------------------------------
 void experiment04()
 {
+    cout << "\nExperiment04. Add a record to the binary file" << endl;
     //Add a record to the binary file
     string filename = "c:/temp/springfieldPeople.bin";
     fstream binFile(filename, ios::in | ios::out | ios::binary);
@@ -354,6 +358,7 @@ void experiment04()
 //---------------------------------------------------------------------------
 void experiment05()
 {
+    cout << "\nExperiment05. Modify an existing record" << endl;
     //Modify an existing record - change Bart's data field to "newData"
     //Barts record is at position 2
     
@@ -398,6 +403,7 @@ void experiment05()
 //---------------------------------------------------------------------------
 void experiment06()
 {
+    cout << "\nExperiment06. Search by ID using Linear Search" << endl;
     //Search by ID using Linear Search
     //Open the binary file for reading and writing
     string binFileName = "c:/temp/springfieldPeople.bin";
@@ -419,6 +425,7 @@ void experiment06()
 //---------------------------------------------------------------------------
 void experiment07()
 {
+    cout << "\nExperiment07. Search by ID using Binary Search" << endl;
     //Search by ID using Binary Search
 
     //Open the binary file for reading and writing
@@ -443,6 +450,7 @@ void experiment07()
 //---------------------------------------------------------------------------
 void     experiment08()
 {
+    cout << "\nExperiment08. Delete a record from the binary file" << endl;
     //Delete a record from the binary file
     //1. Open the binary file for reading and writing
     //2. Open a temporary file for writing
@@ -496,6 +504,7 @@ void     experiment08()
 //---------------------------------------------------------------------------
 void experiment09()
 {
+    cout << "\nExperiment09. Create an index to search by ID. Show the index" << endl;
     //Create an index to search by ID. Show the index
     //Open the binary file for reading
     string binFileName = "c:/temp/springfieldPeople.bin";
@@ -554,10 +563,10 @@ void experiment09()
     binFile.close();
 }
 //---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
+
 void experiment10()
 {
-
+    cout << "\nExperiment10. Using serialization to write and read a Person2 object" << endl;
     //Create two Person2 objects (using std::string type)
     Person2 p1 = { 100, "Homer Simpson", 39, "data100" };
     Person2 p2 = { 200, "Bart Simpson",  10, "data110" };
@@ -577,7 +586,7 @@ void experiment10()
     deserializePerson2Record(p3, binFile);
     deserializePerson2Record(p4, binFile);
     binFile.close();
-    cout << "\nReading Person2 objects from the binary file: " << endl;
+    cout << "\nExperiment10. Reading Person2 objects from the binary file: " << endl;
     p3.print();
     p4.print();
 }
@@ -590,7 +599,7 @@ void serializePerson2Record(Person2& p, fstream& outFile) {
     //Write id, name, age, and data fields to the binary file
     outFile.write((char*)(&p.id), sizeof(p.id));        //Write fixed-length field directly
 
-    //Write name field to the binary file
+    //Write name field to the binary file (size + content)
     int nameLength = p.name.size(); 			  		//Prepare serialization of 'name'
     outFile.write((char*)(&nameLength), sizeof(int)); 	//Write std::string's length
     outFile.write(p.name.c_str(), nameLength);  		//Write std::string's content
@@ -598,7 +607,7 @@ void serializePerson2Record(Person2& p, fstream& outFile) {
     //Write age field to the binary file
     outFile.write((char*)(&p.age), sizeof(p.age));      //Write fixed-length field directly
 
-    //Write the data field to the binary file
+    //Write the data field to the binary file (size + content)
     int dataLength = p.data.size(); 			  		//Prepare serialization of 'data'             
     outFile.write((char*)(&dataLength), sizeof(int));  	//save string size
     outFile.write(p.data.c_str(), dataLength);  		//save the string using fixed length c-string
