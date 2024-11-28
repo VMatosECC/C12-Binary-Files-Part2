@@ -47,12 +47,39 @@ struct Person
     }
 };
 
-// Function Prototypes ---------------------------------------
+//----------------------------------------------------------------
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//-------------------------------------------------------------------
+// To be used by experiment10.
+// Consider the following Person2 structure, where name and data 
+// are std::strings instead of c-strings. Serialization needed.
+struct Person2
+{
+    int    id;
+    string name;
+    int    age;
+    string data;
+
+    void print()
+    {
+        cout << "[ ID: " << id
+            << ", Age: " << age
+            << ", Data: " << data
+            << ", Name: " << name
+            << "]" << endl;
+    }
+};
+
+
+// ---------------------------------------------------------------------
+// Function Prototypes 
 void makeBinaryFile(string& csvFilePath, string& binFilePath);
 void showBinaryFile(fstream& file, string caption = "");
 int  countRecords(string filename);
 void sequentialSearch(fstream& binFile, int key);
 void binarySearch(fstream& binFile, int key);
+void serializePerson2Record(Person2& p, fstream& binFile);
+void deserializePerson2Record(Person2& p, fstream& binFile);
 fstream openBinaryFile(string filename, ios::openmode mode = ios::in | ios::out);
 
 // Main Program ------------------------------------------------------------
@@ -65,7 +92,7 @@ void experiment06();    //Sequential search by ID
 void experiment07();    //Binary search by ID
 void experiment08();    //Delete a record from the binary file
 void experiment09();    //Create an index to search by ID. Show the index
-
+void experiment10();    //Use serialization to write and read a Person object
 
 
 int main()
@@ -78,7 +105,8 @@ int main()
     //experiment06();     //Search by ID using Linear Search
     //experiment07();     //Search by ID using Binary Search
     //experiment08();     //Delete a record from the binary file
-    experiment09();     //Create an index to search by ID. Show the index
+    //experiment09();     //Create an index to search by ID. Show the index
+    experiment10();    //Use serialization to write and read a Person object
     cout << "\nAll done!\n";
 }
 
@@ -526,3 +554,74 @@ void experiment09()
     binFile.close();
 }
 //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+void experiment10()
+{
+
+    //Create two Person2 objects (using std::string type)
+    Person2 p1 = { 100, "Homer Simpson", 39, "data100" };
+    Person2 p2 = { 200, "Bart Simpson",  10, "data110" };
+
+    //create a binary file 
+    string binFileName = "c:/temp/person2.bin";
+    fstream binFile(binFileName, ios::out | ios::binary);
+
+    //Write two Person2 objects to a binary file
+    serializePerson2Record(p1, binFile);
+    serializePerson2Record(p2, binFile);
+    binFile.close();
+
+    //Read a Person2 object from a binary file
+    binFile = openBinaryFile(binFileName, ios::in);
+    Person2 p3, p4;
+    deserializePerson2Record(p3, binFile);
+    deserializePerson2Record(p4, binFile);
+    binFile.close();
+    cout << "\nReading Person2 objects from the binary file: " << endl;
+    p3.print();
+    p4.print();
+}
+
+// ---------------------------------------------------------------------
+// Serialization function
+void serializePerson2Record(Person2& p, fstream& outFile) {
+    //The record must be written item by item to the binary file.
+   
+    //Write id, name, age, and data fields to the binary file
+    outFile.write((char*)(&p.id), sizeof(p.id));        //Write fixed-length field directly
+
+    //Write name field to the binary file
+    int nameLength = p.name.size(); 			  		//Prepare serialization of 'name'
+    outFile.write((char*)(&nameLength), sizeof(int)); 	//Write std::string's length
+    outFile.write(p.name.c_str(), nameLength);  		//Write std::string's content
+
+    //Write age field to the binary file
+    outFile.write((char*)(&p.age), sizeof(p.age));      //Write fixed-length field directly
+
+    //Write the data field to the binary file
+    int dataLength = p.data.size(); 			  		//Prepare serialization of 'data'             
+    outFile.write((char*)(&dataLength), sizeof(int));  	//save string size
+    outFile.write(p.data.c_str(), dataLength);  		//save the string using fixed length c-string
+    
+}
+
+// ---------------------------------------------------------------------
+// Deserialization function
+void deserializePerson2Record(Person2& p, fstream& inFile) {
+    //The record must be read item by item from the binary file.
+    
+    //Reading id, <nameSize, name>, age, and <dataSize, data> fields 
+    inFile.read((char*)(&p.id), sizeof(int)); 			//Read fixed-length field directly 
+
+    int nameLength;										//Prepare deserialization of 'name'
+    inFile.read((char*)(&nameLength), sizeof(int)); 	//read string size
+    p.name.resize(nameLength);  						//resize the destination string to the size read
+    inFile.read(&p.name[0], nameLength);  				//read the string using fixed length c-string
+  
+    inFile.read((char*)(&p.age), sizeof(int)); 			//Read fixed-length field directly
+
+    int dataLength;										//Prepare deserialization of 'data'
+    inFile.read((char*)(&dataLength), sizeof(int)); 	//read string size
+    p.data.resize(dataLength);  						//resize the destination string to the size read
+    inFile.read(&p.data[0], dataLength);  				//read the string using fixed length c-string
+}
